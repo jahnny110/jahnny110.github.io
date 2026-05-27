@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>Výpočet dĺžky pásky</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    width: 360px;
+    text-align: center;
+  }
+  input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0 12px;
+  }
+  button {
+    width: 100%;
+    padding: 10px;
+    background: #2d89ef;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #1b5fbf;
+  }
+  canvas {
+    margin-top: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+  .result {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h3>Výpočet dĺžky pásky</h3>
+
+  <label>Režim výpočtu</label>
+  <select id="mode" onchange="toggleMode()">
+    <option value="layers">Podľa vrstiev</option>
+    <option value="mean">Podľa stredného priemeru</option>
+  </select>
+
+  <div id="layersMode">
+    <label>Počet závitov (n)</label>
+    <input type="number" id="n">
+
+    <label>Hrúbka pásky (h) v mm</label>
+    <input type="number" id="h" step="0.01">
+
+    <label>Vnútorný priemer (Dv) v mm</label>
+    <input type="number" id="Dv" step="0.1">
+  </div>
+
+  <div id="meanMode" style="display:none;">
+    <label>Počet závitov (n)</label>
+    <input type="number" id="n2">
+
+    <label>Stredný priemer (Ds) v mm</label>
+    <input type="number" id="Ds" step="0.1">
+  </div>
+
+  <button onclick="calculate()">Vypočítať</button>
+
+  <div class="result" id="result"></div>
+
+  <canvas id="canvas" width="250" height="250"></canvas>
+</div>
+
+<script>
+function toggleMode() {
+  const mode = document.getElementById("mode").value;
+  document.getElementById("layersMode").style.display =
+    mode === "layers" ? "block" : "none";
+  document.getElementById("meanMode").style.display =
+    mode === "mean" ? "block" : "none";
+}
+
+function calculate() {
+  const mode = document.getElementById("mode").value;
+
+  let L = 0;
+
+  if (mode === "layers") {
+    const n = parseFloat(document.getElementById("n").value);
+    const h_mm = parseFloat(document.getElementById("h").value);
+    const Dv_mm = parseFloat(document.getElementById("Dv").value);
+
+    if (isNaN(n) || isNaN(h_mm) || isNaN(Dv_mm)) {
+      result("Zadaj všetky hodnoty.");
+      return;
+    }
+
+    const h = h_mm / 1000;
+    const Dv = Dv_mm / 1000;
+
+    L = Math.PI * n * (Dv + (n - 1) * h);
+
+    drawRoll(n, h_mm, Dv_mm);
+
+  } else {
+    const n = parseFloat(document.getElementById("n2").value);
+    const Ds_mm = parseFloat(document.getElementById("Ds").value);
+
+    if (isNaN(n) || isNaN(Ds_mm)) {
+      result("Zadaj všetky hodnoty.");
+      return;
+    }
+
+    const Ds = Ds_mm / 1000;
+
+    L = Math.PI * Ds * n;
+
+    drawMean(Ds_mm);
+  }
+
+  result("Dĺžka pásky: " + L.toFixed(2) + " m");
+}
+
+function result(text) {
+  document.getElementById("result").innerText = text;
+}
+
+function drawRoll(n, h, Dv) {
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  const maxDiameter = Dv + (n * h);
+  const scale = 200 / maxDiameter;
+
+  for (let i = 0; i < n; i++) {
+    const diameter = Dv + (i * h);
+    const radius = (diameter / 2) * scale;
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = i === 0 ? "#888" : "#2d89ef";
+    ctx.stroke();
+  }
+}
+
+function drawMean(Ds) {
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  const scale = 200 / Ds;
+  const radius = (Ds / 2) * scale;
+
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = "#e67e22";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillText("Stredný priemer", 60, 20);
+}
+</script>
+
+</body>
+</html>
