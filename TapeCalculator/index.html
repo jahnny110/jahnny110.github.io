@@ -2,48 +2,169 @@
 <html lang="sk">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Výpočet dĺžky pásky</title>
 <style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
   body {
     font-family: Arial, sans-serif;
     background: #f4f6f8;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
+    padding: 10px;
   }
+
   .box {
     background: white;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    width: 360px;
+    width: 100%;
+    max-width: 360px;
     text-align: center;
   }
+
+  h3 {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    color: #333;
+  }
+
+  label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    font-weight: 500;
+    text-align: left;
+    color: #555;
+    font-size: 0.95em;
+  }
+
   input, select {
     width: 100%;
-    padding: 8px;
-    margin: 6px 0 12px;
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
   }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: #2d89ef;
+    box-shadow: 0 0 5px rgba(45, 137, 239, 0.3);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 20px;
+    padding-right: 35px;
+  }
+
   button {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     background: #2d89ef;
     color: white;
     border: none;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: background 0.3s ease;
   }
-  button:hover {
+
+  button:hover, button:active {
     background: #1b5fbf;
   }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
   canvas {
-    margin-top: 15px;
+    margin-top: 20px;
     border: 1px solid #ddd;
     border-radius: 8px;
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
   }
+
   .result {
-    margin-top: 10px;
+    margin-top: 15px;
     font-weight: bold;
+    font-size: 1.1em;
+    color: #2d89ef;
+    padding: 10px;
+    background: #f0f7ff;
+    border-radius: 5px;
+    min-height: 20px;
+  }
+
+  .mode-section {
+    margin: 15px 0;
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 480px) {
+    .box {
+      padding: 15px;
+    }
+
+    h3 {
+      font-size: 1.3em;
+      margin-bottom: 15px;
+    }
+
+    input, select {
+      font-size: 16px;
+      padding: 12px;
+    }
+
+    button {
+      padding: 14px;
+      font-size: 1.05em;
+    }
+
+    label {
+      font-size: 0.9em;
+    }
+
+    canvas {
+      margin-top: 15px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .box {
+      padding: 12px;
+    }
+
+    h3 {
+      font-size: 1.2em;
+    }
+
+    input, select, button {
+      padding: 10px;
+      font-size: 0.95em;
+    }
   }
 </style>
 </head>
@@ -58,23 +179,23 @@
     <option value="mean">Podľa stredného priemeru</option>
   </select>
 
-  <div id="layersMode">
+  <div id="layersMode" class="mode-section">
     <label>Počet závitov (n)</label>
-    <input type="number" id="n">
+    <input type="number" id="n" inputmode="decimal">
 
     <label>Hrúbka pásky (h) v mm</label>
-    <input type="number" id="h" step="0.01">
+    <input type="number" id="h" step="0.01" inputmode="decimal">
 
     <label>Vnútorný priemer (Dv) v mm</label>
-    <input type="number" id="Dv" step="0.1">
+    <input type="number" id="Dv" step="0.1" inputmode="decimal">
   </div>
 
-  <div id="meanMode" style="display:none;">
+  <div id="meanMode" style="display:none;" class="mode-section">
     <label>Počet závitov (n)</label>
-    <input type="number" id="n2">
+    <input type="number" id="n2" inputmode="decimal">
 
     <label>Stredný priemer (Ds) v mm</label>
-    <input type="number" id="Ds" step="0.1">
+    <input type="number" id="Ds" step="0.1" inputmode="decimal">
   </div>
 
   <button onclick="calculate()">Vypočítať</button>
@@ -91,6 +212,7 @@ function toggleMode() {
     mode === "layers" ? "block" : "none";
   document.getElementById("meanMode").style.display =
     mode === "mean" ? "block" : "none";
+  document.getElementById("result").innerText = "";
 }
 
 function calculate() {
@@ -108,6 +230,11 @@ function calculate() {
       return;
     }
 
+    if (n <= 0 || h_mm <= 0 || Dv_mm <= 0) {
+      result("Všetky hodnoty musia byť kladné.");
+      return;
+    }
+
     const h = h_mm / 1000;
     const Dv = Dv_mm / 1000;
 
@@ -121,6 +248,11 @@ function calculate() {
 
     if (isNaN(n) || isNaN(Ds_mm)) {
       result("Zadaj všetky hodnoty.");
+      return;
+    }
+
+    if (n <= 0 || Ds_mm <= 0) {
+      result("Všetky hodnoty musia byť kladné.");
       return;
     }
 
@@ -157,6 +289,7 @@ function drawRoll(n, h, Dv) {
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.strokeStyle = i === 0 ? "#888" : "#2d89ef";
+    ctx.lineWidth = 2;
     ctx.stroke();
   }
 }
@@ -179,7 +312,10 @@ function drawMean(Ds) {
   ctx.lineWidth = 3;
   ctx.stroke();
 
-  ctx.fillText("Stredný priemer", 60, 20);
+  ctx.font = "14px Arial";
+  ctx.fillStyle = "#333";
+  ctx.textAlign = "center";
+  ctx.fillText("Stredný priemer", centerX, centerY + radius + 25);
 }
 </script>
 
