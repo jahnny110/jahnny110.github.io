@@ -238,7 +238,7 @@ function calculate() {
     const h = h_mm / 1000;
     const Dv = Dv_mm / 1000;
 
-    L = Math.PI * (n * Dv + h * n * n);
+    L = Math.PI * ( n * Dv + h * n * (n - 1) )
 
     drawRoll(n, h_mm, Dv_mm);
 
